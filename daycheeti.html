@@ -1,0 +1,199 @@
+<!-- daycheeti.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Day Cheeti</title>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <!-- Left Side: User Input -->
+            <div class="col-md-6">
+                <h2>Enter Details</h2>
+                <!-- Add a form for user input -->
+                <form id="daycheetiForm" action="{{ url_for('process_daycheeti') }}" method="POST">
+                    <!-- Add input fields for date, nilva, customer name, products, cash, and submit button -->
+                    <div class="mb-3">
+                        <label for="date" class="form-label">Date:</label>
+                        <input type="date" class="form-control" id="date" name="date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="nilva" class="form-label">Nilva (Previous Closing):</label>
+                        <input type="text" class="form-control" id="nilva" name="nilva" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="customerName" class="form-label">Customer Name:</label>
+                        <input type="text" class="form-control" id="customerName" name="customerName" required>
+                    </div>
+                    <!-- Add fields for products, quantity, price, and cash -->
+                    <!-- Repeat these fields dynamically based on the number of products -->
+                    <!-- Use JavaScript to dynamically add more product fields if needed -->
+                    <div id="productFields">
+                        <!-- Product 1 -->
+                        <div class="mb-3 productEntry">
+                            <label for="product1" class="form-label">Product 1:</label>
+                            <input type="text" class="form-control" id="product1" name="product[]" required>
+                        </div>
+                        <div class="mb-3 productEntry">
+                            <label for="quantity1" class="form-label">Quantity 1:</label>
+                            <input type="number" class="form-control" id="quantity1" name="quantity[]" required>
+                        </div>
+                        <div class="mb-3 productEntry">
+                            <label for="price1" class="form-label">Price 1:</label>
+                            <input type="number" class="form-control" id="price1" name="price[]" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-primary" onclick="addProductField()">Add Another Product</button>
+                        <button type="button" class="btn btn-success" onclick="addCustomer()">Add Customer</button>
+                    </div>
+                    <div class="mb-3">
+                        <label for="cash" class="form-label">Cash:</label>
+                        <input type="number" class="form-control" id="cash" name="cash">
+                    </div>
+                    <!-- Add fields for expenses description and amount -->
+                    <div id="expensesFields">
+                        <div class="mb-3 expensesEntry">
+                            <label for="expenseDescription1" class="form-label">Expense Description 1:</label>
+                            <input type="text" class="form-control" id="expenseDescription1" name="expenseDescription[]" required>
+                        </div>
+                        <div class="mb-3 expensesEntry">
+                            <label for="expenseAmount1" class="form-label">Expense Amount 1:</label>
+                            <input type="number" class="form-control" id="expenseAmount1" name="expenseAmount[]" required>
+                        </div>
+                    </div>
+                  <div class="mb-3">
+                      <button type="button" class="btn btn-info" onclick="displayExpensesOnPaper()">Add Expense</button>
+                  </div>
+
+                </form>
+            </div>
+
+            <!-- Right Side: Display on Paper -->
+            <div class="col-md-6">
+                <h2>Day Cheeti Paper</h2>
+                <!-- Paper Columns -->
+                <div class="row mt-3">
+                    <!-- Column 1: Nilva and Cash -->
+                    <div class="col-md-3">
+                        <!-- <h5>Nilva</h5> -->
+                        <p id="displayNilva"></p>
+                        <!-- <h5>Cash</h5> -->
+                        <div id="cashDetails"></div>
+                        <p id="totalCost"></p>
+                    </div>
+                    <!-- Columns 2 and 3: Customer and Product Details -->
+                    <div class="col-md-6">
+                        <h5>Customer Details</h5>
+                        <div id="customerDetails"></div>
+                    </div>
+                    <!-- Column 4: Expenses -->
+                    <div class="col-md-3">
+                        <!-- <h5>Expenses</h5> -->
+                        <div id="expenseDetails"></div>
+                        <p id="totalExpenses"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add your scripts here -->
+    <script>
+        var nilvaUpdated = false;
+
+        function addProductField() {
+            var productFields = document.getElementById('productFields');
+            var productCount = productFields.children.length / 3 + 1; // 3 fields per product
+
+            var productDiv = document.createElement('div');
+            productDiv.classList.add('mb-3', 'productEntry');
+            productDiv.innerHTML = '<label for="product' + productCount + '" class="form-label">Product ' + productCount + ':</label>' +
+                '<input type="text" class="form-control" id="product' + productCount + '" name="product[]" required>';
+            productFields.appendChild(productDiv);
+
+            var quantityDiv = document.createElement('div');
+            quantityDiv.classList.add('mb-3', 'productEntry');
+            quantityDiv.innerHTML = '<label for="quantity' + productCount + '" class="form-label">Quantity ' + productCount + ':</label>' +
+                '<input type="number" class="form-control" id="quantity' + productCount + '" name="quantity[]" required>';
+            productFields.appendChild(quantityDiv);
+
+            var priceDiv = document.createElement('div');
+            priceDiv.classList.add('mb-3', 'productEntry');
+            priceDiv.innerHTML = '<label for="price' + productCount + '" class="form-label">Price ' + productCount + ':</label>' +
+                '<input type="number" class="form-control" id="price' + productCount + '" name="price[]" required>';
+            productFields.appendChild(priceDiv);
+        }
+
+        
+        function addCustomer() {
+            var date = document.getElementById('date').value;
+            var nilva = document.getElementById('nilva').value;
+
+            if (!nilvaUpdated) {
+                document.getElementById('displayNilva').innerText = 'Nilva: ' + nilva;
+                nilvaUpdated = true;
+            }
+
+            var customerName = document.getElementById('customerName').value;
+            var cash = document.getElementById('cash').value;
+
+            var customerDetails = document.getElementById('customerDetails');
+            customerDetails.innerHTML += '<h6>' + customerName + '</h6>';
+
+            var productEntries = document.querySelectorAll('.productEntry');
+            var totalCost = 0;
+
+            for (var i = 0; i < productEntries.length; i += 3) {
+                var product = productEntries[i].querySelector('input[type="text"]').value;
+                var quantity = parseFloat(productEntries[i + 1].querySelector('input[type="number"]').value);
+                var price = parseFloat(productEntries[i + 2].querySelector('input[type="number"]').value);
+                var cost = quantity * price;
+
+                customerDetails.innerHTML += '<p>' + product + ' * ' + quantity + ' = ' + cost + '</p>';
+                totalCost += cost;
+            }
+
+            document.getElementById('cashDetails').innerHTML += '<p>Cash: ' + (cash ? cash : '0') + '</p>';
+            document.getElementById('totalCost').innerText = 'Total Cost: ' + (parseFloat(nilva) + parseFloat(cash ? cash : '0'));
+
+            
+            // Clear input fields
+            document.getElementById('customerName').value = '';
+            document.getElementById('cash').value = '';
+
+            productEntries.forEach(function (entry) {
+                entry.querySelector('input[type="text"]').value = '';
+                entry.querySelector('input[type="number"]').value = '';
+            });
+
+            expensesEntries.forEach(function (entry) {
+                entry.querySelector('input[type="text"]').value = '';
+                entry.querySelector('input[type="number"]').value = '';
+            });
+        }
+      function displayExpensesOnPaper() {
+          var expenseDetails = document.getElementById('expenseDetails');
+          var expensesEntries = document.querySelectorAll('.expensesEntry');
+          var totalExpenses = 0;
+
+          // Clear previous entries
+          expenseDetails.innerHTML = '';
+
+          for (var j = 0; j < expensesEntries.length; j += 2) {
+              var expenseDescription = expensesEntries[j].querySelector('input[type="text"]').value;
+              var expenseAmount = parseFloat(expensesEntries[j + 1].querySelector('input[type="number"]').value);
+
+              expenseDetails.innerHTML += '<p>' + expenseDescription + ' - ' + expenseAmount + '</p>';
+              totalExpenses += expenseAmount;
+          }
+
+          document.getElementById('totalExpenses').innerText = 'Total Expenses: ' + totalExpenses;
+      }
+
+      
+    </script>
+</body>
+</html>
